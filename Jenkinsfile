@@ -38,12 +38,11 @@ spec:
 
 
     stages {
-        stage('Checkout & Verify') {
+        stage('Checkout Code') {
             steps {
                 container('build-tools') {
-                    // This container handles the Git checkout and cluster checks
-                    checkout scm
-                    //sh 'kubectl get pods -n jenkins'
+                    // This container handles the Git checkout 
+                    checkout scm                    
                 }
             }
         }

@@ -1,0 +1,32 @@
+# Exclude local virtual environments
+venv/
+.venv/
+env/
+ENV/
+myenv/
+
+# Exclude Python byte code and caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.tox/
+.coverage
+htmlcov/
+
+# Exclude git history and metadata
+.git
+.gitignore
+
+# Exclude local IDE settings
+.vscode/
+.idea/
+
+# Exclude local secrets and logs
+.env
+*.log
+
+# Exclude Docker files themselves
+Dockerfile
+.dockerignore

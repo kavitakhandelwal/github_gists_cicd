@@ -1,12 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
+  namespace: jenkins
   name: github-gists-service
 spec:
   selector:
     app: gists-api
   ports:
     - protocol: TCP
-      port: 8080       # Port exposed outside the service
+      port: 8080       # Port exposed outside the cluster
       targetPort: 8080 # Port your app is listening on
   type: NodePort # This makes it accessible on your Minikube IP
