@@ -30,3 +30,5 @@ htmlcov/
 # Exclude Docker files themselves
 Dockerfile
 .dockerignore
+
+Jenkinsfile

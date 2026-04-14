@@ -23,7 +23,11 @@ USER appuser
 COPY --from=builder /home/appuser/.local /home/appuser/.local
 
 # Copy application code
-COPY . .
+#COPY . .
+# Copy the specific files and folders
+COPY main.py pytest.ini readme.md ./
+COPY services/ ./services/
+COPY tests/ ./tests/
 
 # Change ownership of /app and /home/appuser/.local to appuser
 #RUN chown -R appuser:appuser /app /home/appuser/.local
