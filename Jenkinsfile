@@ -9,21 +9,22 @@ spec:
   serviceAccountName: jenkins-sa
   containers:
   - name: build-tools
-    image: alpine/k8s:1.29.2  # Lightweight image with kubectl, helm, and git
+    image: alpine/k8s:1.29.2
     command: ['cat']
     tty: true
-  - name: kaniko
-    image: gcr.io/kaniko-project/executor:debug
+  - name: jnlp # This represents your main Jenkins agent container with Buildah installed
+    securityContext:
+      privileged: false
+      capabilities:
+        add: ["SETFCAP"] 
     env:
-      - name: DOCKER_CONFIG
-        value: /kaniko/.docker/
-    command: ['sleep']
-    args: ['99d']
+      - name: STORAGE_DRIVER
+        value: vfs
     volumeMounts:
-      - name: kaniko-secret
-        mountPath: /kaniko/.docker
+      - name: docker-config
+        mountPath: /root/.docker
   volumes:
-    - name: kaniko-secret
+    - name: docker-config
       secret:
         secretName: dockerhub-secret
         items:
@@ -32,47 +33,29 @@ spec:
 '''
         }
     }
+
     environment {
         DOCKERHUB_REPO = "kavitakhandelwal/github_gists"
     }
 
-
     stages {
-        stage('Checkout Code') {
-            steps {
-                container('build-tools') {
-                    // This container handles the Git checkout 
-                    checkout scm                    
-                }
-            }
-        }
-
         stage('Build & Push') {
             steps {
-                container('kaniko') {
-                    withEnv(['DOCKER_CONFIG=/kaniko/.docker/']) {
-                   sh 'ls -la /kaniko/.docker/ && cat /kaniko/.docker/config.json'
-                    // This container handles ONLY the image building
-                    sh '/kaniko/executor --dockerfile=Dockerfile --context=dir://${WORKSPACE} --destination=${DOCKERHUB_REPO}:${BUILD_NUMBER}-NEW'
+                // Since Buildah is in your main agent, you use 'jnlp' or no container block at all
+                container('jnlp') {
+                    sh "buildah bud --storage-driver=vfs -t ${DOCKERHUB_REPO}:${BUILD_NUMBER}-NEW ."
+                    sh "buildah push --storage-driver=vfs --authfile /root/.docker/config.json ${DOCKERHUB_REPO}:${BUILD_NUMBER}-NEW"
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                container('build-tools') {
+                    sh "sed -i 's|image: kavitakhandelwal/github_gists:latest|image: ${DOCKERHUB_REPO}:${BUILD_NUMBER}-NEW|g' deploy/deployment.yaml"
+                    sh 'kubectl apply -f deploy/deployment.yaml'
                 }
             }
         }
     }
-
-    stage('Deploy to Minikube') {
-    steps {
-        container('build-tools') {
-            // This replaces the image tag in the YAML dynamically
-            sh "sed -i 's|image: kavitakhandelwal/github_gists:latest|image: kavitakhandelwal/github_gists:${BUILD_NUMBER}-NEW|g' deploy/deployment.yaml"
-            
-            // Apply the deployment
-            sh 'kubectl apply -f deploy/deployment.yaml'
-            
-            sh 'kubectl apply -f deploy/service.yaml'
-            // Verify rollout
-            sh 'kubectl rollout status deployment/github-gists-api'
-        }
-    }
-    }
-}
 }
