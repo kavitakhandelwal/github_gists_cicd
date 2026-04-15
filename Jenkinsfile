@@ -42,10 +42,10 @@ spec:
         stage('Build & Push') {
             steps {
                 // Since Buildah is in your main agent, you use 'jnlp' or no container block at all
-                container('jnlp') {
+               // container('jnlp') {
                     sh "buildah bud --storage-driver=vfs -t ${DOCKERHUB_REPO}:${BUILD_NUMBER}-NEW ."
                     sh "buildah push --storage-driver=vfs --authfile /root/.docker/config.json ${DOCKERHUB_REPO}:${BUILD_NUMBER}-NEW"
-                }
+               // }
             }
         }
 
